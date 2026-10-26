@@ -1,0 +1,48 @@
+-- .Models.Model.mDispatchHybridWO
+var WO : object
+var DispatchedOne : boolean
+
+
+-- Dispatch customer WOs
+-- Every WO has already received its fixed Hybrid DSO assignment when it was released into WaitingOrders.
+-- Dispatch all WOs whose assigned DSO is currently available.
+
+repeat
+
+    DispatchedOne := false
+
+    for var i := 1 to WaitingOrders.numMU
+
+        WO := WaitingOrders.MU(i)
+
+        if mDSOAvailable(WO)
+
+            mClaimDSO(WO)
+
+            WO.move(ActiveOrders)
+
+            mStartWO(WO)
+
+            DispatchedOne := true
+
+            exitloop
+
+        end
+
+    next
+
+until DispatchedOne = false
+
+
+-- Advance preparation for idle DSOs
+-- Customer work has priority. Any DSO that remains eligible and idle may perform the existing To-Be 1 advance-preparation process.
+
+for var DSO := 1 to NumberOfDSOs
+
+    if mCanDSOStartPreparation(DSO)
+
+        mStartIdlePreparation(DSO)
+
+    end
+
+next

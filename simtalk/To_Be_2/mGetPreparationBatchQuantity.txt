@@ -1,0 +1,29 @@
+-- .Models.Model.mGetPreparationBatchQuantity
+param Group : string
+-> integer
+
+var AvailableCapacity : integer
+
+for var i := 1 to PreUpdatedInventory.yDim
+
+    if PreUpdatedInventory[1, i] = Group
+
+        AvailableCapacity := MaxPreUpdatedStockPerGroup - PreUpdatedInventory[2, i] - PreUpdatedInventory[3, i]
+
+        if AvailableCapacity <= 0
+            return 0
+        end
+
+        if AvailableCapacity < PreUpdateBatchSize
+            return AvailableCapacity
+        else
+            return PreUpdateBatchSize
+        end
+
+    end
+
+next
+
+-- Group not found.
+return 0
+

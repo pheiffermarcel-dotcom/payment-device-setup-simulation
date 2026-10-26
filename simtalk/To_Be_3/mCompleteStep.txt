@@ -1,0 +1,201 @@
+-- .Models.Model.mCompleteStep
+param WO : object := void
+
+var ProcessingTime : time
+
+if WO = void
+    print "ERROR: No Work Order passed to mCompleteStep"
+    return
+end
+
+print "Work Order: ", WO.WorkOrderNumber
+print "Simulation DSO: ", WO.SimulationDSO
+print "Completed Step: ", WO.CurrentStep
+
+if WO.CurrentStep = "S1"
+
+    WO.CurrentStep := "S2"
+
+    ProcessingTime := mGetProcessingTime(WO, "S2")
+	WO.SetupProcessingTime := WO.SetupProcessingTime + ProcessingTime
+
+    print "Starting next step: S2"
+    print "S2 Processing Time: ", ProcessingTime
+
+    &mCompleteStep.executeIn(ProcessingTime, WO)
+
+    return
+end
+
+if WO.CurrentStep = "S2"
+
+    WO.CurrentStep := "S3"
+
+    ProcessingTime := mGetProcessingTime(WO, "S3")
+	WO.SetupProcessingTime := WO.SetupProcessingTime + ProcessingTime
+
+    print "Starting next step: S3"
+    print "S3 Processing Time: ", ProcessingTime
+
+    &mCompleteStep.executeIn(ProcessingTime, WO)
+
+    return
+end
+
+if WO.CurrentStep = "S3"
+
+    -- Assign OTA attributes once for this WO.
+    mAssignWorkOrderOTA(WO)
+
+    if WO.OTARequired
+
+        WO.CurrentStep := "OTA"
+
+        print "Starting OTA for Work Order: ", WO.WorkOrderNumber
+        print "OTA method: ", WO.OTAMethod
+        print "OTA-affected devices: ", WO.OTAAffectedQuantity
+        print "OTA processing time: ", WO.OTADuration
+
+        &mCompleteStep.executeIn(WO.OTADuration, WO)
+
+    else
+
+        -- No OTA required: proceed to S4.
+        WO.CurrentStep := "S4"
+
+        ProcessingTime := mGetProcessingTime(WO, "S4")
+		WO.SetupProcessingTime := WO.SetupProcessingTime + ProcessingTime
+
+        print "No OTA required."
+        print "Starting next step: S4"
+        print "S4 Processing Time: ", ProcessingTime
+
+        &mCompleteStep.executeIn(ProcessingTime, WO)
+
+    end
+
+    return
+end
+
+if WO.CurrentStep = "OTA"
+
+    -- OTA has finished. Continue with S4 processing.
+    WO.CurrentStep := "S4"
+
+    ProcessingTime := mGetProcessingTime(WO, "S4")
+	WO.SetupProcessingTime := WO.SetupProcessingTime + ProcessingTime
+
+    print "OTA completed for Work Order: ", WO.WorkOrderNumber
+    print "Starting next step: S4"
+    print "S4 Processing Time: ", ProcessingTime
+
+    &mCompleteStep.executeIn(ProcessingTime, WO)
+
+    return
+end
+if WO.CurrentStep = "S4"
+
+    if WO.DeviceType = "EMV"
+
+        WO.CurrentStep := "S5"
+        ProcessingTime := mGetProcessingTime(WO, "S5")
+		WO.SetupProcessingTime := WO.SetupProcessingTime + ProcessingTime
+
+        print "Starting next step: S5"
+        print "S5 Processing Time: ", ProcessingTime
+
+        &mCompleteStep.executeIn(ProcessingTime, WO)
+
+        return
+
+    else
+
+        WO.CurrentStep := "S7"
+        ProcessingTime := mGetProcessingTime(WO, "S7")
+		WO.SetupProcessingTime := WO.SetupProcessingTime + ProcessingTime
+
+
+        print "Non-EMV route: skipping S5 and S6"
+        print "Starting next step: S7"
+        print "S7 Processing Time: ", ProcessingTime
+
+        &mCompleteStep.executeIn(ProcessingTime, WO)
+
+        return
+
+    end
+end
+if WO.CurrentStep = "S5"
+
+    WO.CurrentStep := "S6"
+
+    ProcessingTime := mGetProcessingTime(WO, "S6")
+	WO.SetupProcessingTime := WO.SetupProcessingTime + ProcessingTime
+
+    print "Starting next step: S6"
+    print "S6 Processing Time: ", ProcessingTime
+
+    &mCompleteStep.executeIn(ProcessingTime, WO)
+
+    return
+end
+
+if WO.CurrentStep = "S6"
+
+    WO.CurrentStep := "S7"
+
+    ProcessingTime := mGetProcessingTime(WO, "S7")
+	WO.SetupProcessingTime := WO.SetupProcessingTime + ProcessingTime
+
+    print "Starting next step: S7"
+    print "S7 Processing Time: ", ProcessingTime
+
+    &mCompleteStep.executeIn(ProcessingTime, WO)
+
+    return
+end
+if WO.CurrentStep = "S7"
+
+    print "Work Order completed: ", WO.WorkOrderNumber
+    print "Releasing Simulation DSO: ", WO.SimulationDSO
+	print "S1–S7 setup processing time: ", WO.SetupProcessingTime
+
+    WO.CompletionTime := EventController.AbsSimTime
+    WO.FlowTime := WO.CompletionTime - WO.ReleaseTime
+
+    mRecordWOResult(WO)
+    CompletedWOCount := CompletedWOCount + 1
+
+	if AssignmentMode = "Historical"
+
+    DSO_State[5, WO.SimulationDSO] :=
+        DSO_State[5, WO.SimulationDSO] + 1
+
+	end
+
+    mUpdateSOCompletion(WO)
+
+    WO.move(CompletedOrders)
+
+    mReleaseDSO(WO)
+
+    WO.CurrentStep := "Completed"
+
+    print "Work Order moved to CompletedOrders."
+    print "DSO released."
+
+    mDispatchWO
+
+    if CompletedWOCount = WO_History.yDim
+
+    -- Record when the final historical WO/SO has completed. This is the primary fulfilment endpoint.
+    FinalSOCompletionTime := EventController.AbsSimTime
+
+    print "FINAL SO COMPLETE | Time: ", FinalSOCompletionTime
+
+	end
+	mCheckToBeCompletion
+
+    return
+end
+

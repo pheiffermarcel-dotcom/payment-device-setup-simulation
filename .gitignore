@@ -1,0 +1,16 @@
+# Local/private material never intended for publication
+.Rhistory
+.RData
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.swp
+*.swo
+~$*
+private/
+confidential/
+raw_data/
+data/Time_Study_Dataset_Anonymised.xlsx
+data/ScalabilityResults/
+*.log

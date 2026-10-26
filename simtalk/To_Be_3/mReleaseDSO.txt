@@ -1,0 +1,75 @@
+-- .Models.Model.mReleaseDSO
+param WO : object
+
+var DSORow : integer
+var AssignedWOCount : integer
+var WaitingWO : object
+
+DSORow := WO.SimulationDSO
+
+
+-- Hybrid mode
+-- Each WO is independently allocated. There is no SO reservation/commitment. Once the WO completes, its DSO becomes available.
+
+if AssignmentMode = "Hybrid"
+
+    DSO_State[2, DSORow] := false
+    DSO_State[3, DSORow] := void
+
+    -- CurrentSO is not used as an allocation restriction under Hybrid assignment.
+    DSO_State[4, DSORow] := ""
+
+    return
+
+end
+
+
+-- Historical mode
+-- Preserve the To-Be 1 SO commitment logic.
+
+if AssignmentMode = "Historical"
+
+    AssignedWOCount := 0
+
+    -- The DSO is no longer processing this WO.
+    DSO_State[2, DSORow] := false
+    DSO_State[3, DSORow] := void
+
+
+    -- Count completed WOs and waiting WOs belonging to the same SO and historical DSO.
+    AssignedWOCount := DSO_State[5, DSORow]
+
+    for var i := 1 to WaitingOrders.numMU
+
+        WaitingWO := WaitingOrders.MU(i)
+
+        if WaitingWO.SalesOrderNumber = WO.SalesOrderNumber and
+           WaitingWO.DSO = WO.DSO
+
+            AssignedWOCount :=
+                AssignedWOCount + 1
+
+        end
+
+    next
+
+
+    -- Release the SO reservation only after this DSO has completed every assigned WO.
+    if DSO_State[5, DSORow] = AssignedWOCount
+
+        DSO_State[7, DSORow] :=
+            DSO_State[7, DSORow] +
+            (WO.CompletionTime - DSO_State[6, DSORow])
+
+        DSO_State[4, DSORow] := ""
+        DSO_State[5, DSORow] := 0
+
+    end
+
+    return
+
+end
+
+
+print "ERROR: Unknown AssignmentMode in mReleaseDSO: ",
+      AssignmentMode

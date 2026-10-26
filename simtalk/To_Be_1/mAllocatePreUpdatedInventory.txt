@@ -1,0 +1,64 @@
+-- .Models.Model.mAllocatePreUpdatedInventory
+param WO : object
+
+var InventoryRow : integer
+var AvailableStock : integer
+var QuantityNeeded : integer
+var QuantityFromStock : integer
+
+-- Prevent the same WO from being allocated twice.
+if WO.InventoryAllocated
+    return
+end
+
+InventoryRow := 0
+QuantityNeeded := WO.WorkOrderQuantity
+
+-- Find the matching pre-updated inventory pool.
+for var i := 1 to PreUpdatedInventory.yDim
+
+    if PreUpdatedInventory[1, i] = WO.Group
+        InventoryRow := i
+        exitloop
+    end
+
+next
+
+if InventoryRow = 0
+    print "ERROR: WO group not found in PreUpdatedInventory: ", WO.Group
+    return
+end
+
+AvailableStock := PreUpdatedInventory[2, InventoryRow]
+
+-- Take as many matching pre-updated devices as possible.
+if AvailableStock >= QuantityNeeded
+    QuantityFromStock := QuantityNeeded
+else
+    QuantityFromStock := AvailableStock
+end
+
+-- Record how this WO is fulfilled.
+WO.PreUpdatedQuantity := QuantityFromStock
+WO.UnupdatedQuantity := QuantityNeeded - QuantityFromStock
+
+-- Remove consumed devices from available pre-updated stock.
+PreUpdatedInventory[2, InventoryRow] :=
+    PreUpdatedInventory[2, InventoryRow] - QuantityFromStock
+
+-- Accumulate the number of pre-updated devices actually used by WOs.
+TotalPreUpdatedDevicesUsed :=
+    TotalPreUpdatedDevicesUsed + QuantityFromStock
+
+TotalUnupdatedDevicesUsed :=
+    TotalUnupdatedDevicesUsed + WO.UnupdatedQuantity
+
+WO.InventoryAllocated := true
+
+print "WO INVENTORY | WO: ", WO.WorkOrderNumber,
+      " | Group: ", WO.Group,
+      " | Qty: ", WO.WorkOrderQuantity,
+      " | PreUpdated: ", WO.PreUpdatedQuantity,
+      " | Unupdated: ", WO.UnupdatedQuantity,
+      " | StockRemaining: ", PreUpdatedInventory[2, InventoryRow]
+

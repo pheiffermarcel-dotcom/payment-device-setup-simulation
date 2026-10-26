@@ -1,0 +1,77 @@
+-- .Models.Model.mCalculatePreparationGroupProbabilities
+var EMVG1Qty : integer
+var EMVG2Qty : integer
+var NonEMVG1Qty : integer
+var NonEMVG2Qty : integer
+var TotalQty : integer
+
+EMVG1Qty := 0
+EMVG2Qty := 0
+NonEMVG1Qty := 0
+NonEMVG2Qty := 0
+
+-- Sum historical ordered device quantities by group
+for var i := 1 to WO_History.yDim
+
+    var DeviceType : string
+    var Grade : string
+    var Qty : integer
+
+    DeviceType := WO_History[3, i]
+    Grade := WO_History[4, i]
+    Qty := WO_History[7, i]
+
+    if DeviceType = "EMV"
+
+        if Grade = "G1"
+            EMVG1Qty := EMVG1Qty + Qty
+        else
+            EMVG2Qty := EMVG2Qty + Qty
+        end
+
+    else
+
+        if Grade = "G1"
+            NonEMVG1Qty := NonEMVG1Qty + Qty
+        else
+            NonEMVG2Qty := NonEMVG2Qty + Qty
+        end
+
+    end
+
+next
+
+TotalQty := EMVG1Qty + EMVG2Qty + NonEMVG1Qty + NonEMVG2Qty
+
+-- Store quantities
+PreparationGroupProbabilities[2, 1] := EMVG1Qty
+PreparationGroupProbabilities[2, 2] := EMVG2Qty
+PreparationGroupProbabilities[2, 3] := NonEMVG1Qty
+PreparationGroupProbabilities[2, 4] := NonEMVG2Qty
+
+-- Calculate probabilities
+if TotalQty > 0
+
+    PreparationGroupProbabilities[3, 1] := EMVG1Qty / TotalQty
+    PreparationGroupProbabilities[3, 2] := EMVG2Qty / TotalQty
+    PreparationGroupProbabilities[3, 3] := NonEMVG1Qty / TotalQty
+    PreparationGroupProbabilities[3, 4] := NonEMVG2Qty / TotalQty
+
+else
+
+    print "ERROR: Historical device quantity is zero."
+
+end
+
+print "--------------------------------"
+print "PREPARATION GROUP PROBABILITIES"
+print "Total historical devices: ", TotalQty
+
+for var i := 1 to PreparationGroupProbabilities.yDim
+    print PreparationGroupProbabilities[1, i],
+          " | Qty: ", PreparationGroupProbabilities[2, i],
+          " | Probability: ", PreparationGroupProbabilities[3, i]
+next
+
+print "--------------------------------"
+

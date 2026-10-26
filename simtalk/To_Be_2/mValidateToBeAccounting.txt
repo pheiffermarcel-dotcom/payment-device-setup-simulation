@@ -1,0 +1,9 @@
+-- .Models.Model.mValidateToBeAccounting
+if TotalPreUpdatedDevicesUsed + TotalUnupdatedDevicesUsed /= 4893
+    print "ERROR: WO inventory accounting does not balance."
+end
+
+if TotalPreUpdatedDevicesPrepared - TotalPreUpdatedDevicesUsed /= EndingPreUpdatedStock
+    print "ERROR: Prepared inventory accounting does not balance."
+end
+

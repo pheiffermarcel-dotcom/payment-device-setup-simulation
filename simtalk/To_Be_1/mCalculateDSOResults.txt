@@ -1,0 +1,59 @@
+-- .Models.Model.mCalculateDSOResults
+DSO_Results.deleteContents
+
+for var i := 1 to NumberOfDSOs
+
+    DSO_Results[1, i] := i
+    DSO_Results[2, i] := 0
+    DSO_Results[3, i] := 0
+    DSO_Results[4, i] := 0:00:00
+    DSO_Results[5, i] := HistoricalElapsedTime
+    DSO_Results[6, i] := 0.0
+	DSO_Results[7, i] := 0:00:00
+	DSO_Results[8, i] := 0.0
+	DSO_Results[9, i] := 0:00:00
+	DSO_Results[10, i] := 0.0
+
+next
+
+
+for var j := 1 to WO_Results.yDim
+
+    var DSORow : integer
+    DSORow := WO_Results[9, j]
+
+    DSO_Results[2, DSORow] := DSO_Results[2, DSORow] + 1
+    DSO_Results[3, DSORow] := DSO_Results[3, DSORow] + WO_Results[7, j]
+    DSO_Results[4, DSORow] := DSO_Results[4, DSORow] + (WO_Results[12, j] - WO_Results[11, j])
+
+next
+
+-- Add preparation busy time per DSO.
+for var j := 1 to Preparation_Results.yDim
+
+    var PrepDSORow : integer
+    PrepDSORow := Preparation_Results[4, j]
+
+    DSO_Results[9, PrepDSORow] :=
+        DSO_Results[9, PrepDSORow] +
+        (Preparation_Results[6, j] - Preparation_Results[5, j])
+
+next
+
+
+for var i := 1 to NumberOfDSOs
+
+    -- Existing WO-based utilisation
+    DSO_Results[6, i] := DSO_Results[4, i] / DSO_Results[5, i]
+
+    -- SO commitment time and utilisation
+    DSO_Results[7, i] := DSO_State[7, i]
+    DSO_Results[8, i] := DSO_Results[7, i] / DSO_Results[5, i]
+
+	-- Overall To-Be DSO utilisation: historical WO busy time + preparation busy time.
+DSO_Results[10, i] :=
+    (DSO_Results[4, i] + DSO_Results[9, i]) /
+    ToBeAccountingElapsedTime
+
+next
+

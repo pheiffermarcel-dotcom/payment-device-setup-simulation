@@ -1,0 +1,12 @@
+-- .Models.Model.mDSOAvailable
+param WO : object -> boolean
+
+var DSORow : integer
+DSORow := WO.SimulationDSO
+
+if DSO_State[2, DSORow] = false
+    return true
+else
+    return false
+end
+

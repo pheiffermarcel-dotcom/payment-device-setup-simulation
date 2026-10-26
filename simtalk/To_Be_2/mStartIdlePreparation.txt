@@ -1,0 +1,30 @@
+-- .Models.Model.mStartIdlePreparation
+param DSO : integer
+-> boolean
+var Batch : object
+
+-- Check whether this DSO is currently eligible for advance preparation.
+if mCanDSOStartPreparation(DSO) = false
+    return false
+end
+
+-- Select group, determine batch quantity, reserve inventory capacity and create batch.
+Batch := mCreatePreparationBatch(DSO)
+
+if Batch = void
+    return false
+end
+
+-- Mark the DSO as occupied by preparation.
+DSO_State[2, DSO] := true
+
+print "Idle DSO starting preparation."
+print "DSO: ", DSO
+print "Group: ", Batch.Group
+print "Quantity: ", Batch.BatchQuantity
+
+-- Start preparation route.
+mStartPreparationBatch(Batch)
+
+return true
+

@@ -1,0 +1,36 @@
+-- .Models.Model.mRecordToBeKPIs
+var ResultRow : integer
+
+ResultRow := ToBe_KPIs.yDim + 1
+
+ToBe_KPIs[1, ResultRow] := CurrentReplication
+ToBe_KPIs[2, ResultRow] := FinalSOCompletionTime
+ToBe_KPIs[3, ResultRow] := FinalPreparationCompletionTime
+ToBe_KPIs[4, ResultRow] := MeanSOSLT
+ToBe_KPIs[5, ResultRow] := SalesOrderThroughput
+ToBe_KPIs[6, ResultRow] := DeviceThroughput
+ToBe_KPIs[7, ResultRow] := MeanDSOUtilisation
+ToBe_KPIs[8, ResultRow] := TotalPreUpdatedDevicesPrepared
+ToBe_KPIs[9, ResultRow] := TotalPreUpdatedDevicesUsed
+ToBe_KPIs[10, ResultRow] := EndingPreUpdatedStock
+ToBe_KPIs[11, ResultRow] := TotalPreparationProcessingTime
+ToBe_KPIs[12, ResultRow] := TotalPreparationOTATime
+ToBe_KPIs[13, ResultRow] := TotalUnupdatedDevicesUsed
+ToBe_KPIs[14, ResultRow] := TotalWorkOrdersRequiringOTA
+ToBe_KPIs[15, ResultRow] := TotalWorkOrderOTATime
+ToBe_KPIs[17, ResultRow] := TotalToBeDSOWorkTime
+ToBe_KPIs[18, ResultRow] := TotalSetupProcessingTime
+ToBe_KPIs[19, ResultRow] := PreUpdatedDemandCoverage
+
+if TotalPreUpdatedDevicesPrepared > 0
+
+    ToBe_KPIs[16, ResultRow] :=
+        TotalPreUpdatedDevicesUsed /
+        TotalPreUpdatedDevicesPrepared
+
+else
+
+    ToBe_KPIs[16, ResultRow] := 0.0
+
+end
+

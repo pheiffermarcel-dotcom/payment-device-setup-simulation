@@ -1,0 +1,22 @@
+-- .Models.Model.mStartPreparationBatch
+param Batch : object
+
+var ProcessingTime : time
+
+-- Mark preparation batch as being processed.
+Batch.PreparationStep := "S1"
+
+-- Sample S1 from the existing processing-time model.
+ProcessingTime := mGetProcessingTime(Batch, "S1")
+
+-- Accumulate preparation-specific processing time.
+Batch.PreparationProcessingTime :=
+    Batch.PreparationProcessingTime + ProcessingTime
+
+print "PREP START | DSO: ", Batch.PreparationDSO,
+      " | Group: ", Batch.Group,
+      " | Qty: ", Batch.BatchQuantity
+
+-- Schedule completion of S1.
+&mCompletePreparationStep.executeIn(ProcessingTime, Batch)
+

@@ -1,0 +1,26 @@
+-- .Models.Model.mGetOTAAffectedQuantity
+
+param WorkOrderQuantity : integer
+-> integer
+
+var SampleRow : integer
+var HistoricalQuantity : integer
+var HistoricalAffectedQuantity : integer
+var AffectedFraction : real
+var AffectedQuantity : integer
+
+-- Select one of the historical WiFi-affected WOs.
+SampleRow := z_uniform(1, 1, OTAAffectedQuantityData.yDim + 1)
+
+HistoricalQuantity := OTAAffectedQuantityData[1, SampleRow]
+HistoricalAffectedQuantity := OTAAffectedQuantityData[2, SampleRow]
+
+-- Apply its observed affected-device fraction to the simulated WO's quantity.
+AffectedFraction := HistoricalAffectedQuantity / HistoricalQuantity
+AffectedQuantity := round(WorkOrderQuantity * AffectedFraction)
+
+-- An OTA-affected WO must have at least one affected device, but cannot exceed its total quantity.
+AffectedQuantity := max(1, min(WorkOrderQuantity, AffectedQuantity))
+
+return AffectedQuantity
+

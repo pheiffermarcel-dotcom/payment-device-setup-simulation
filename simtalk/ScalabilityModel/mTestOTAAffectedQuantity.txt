@@ -1,0 +1,15 @@
+-- .Models.Model.mTestOTAAffectedQuantity
+
+var AffectedQuantity : integer
+
+for var Q := 1 to 20
+    AffectedQuantity := mGetOTAAffectedQuantity(Q)
+
+    print "WO quantity: ", Q,
+          " | OTA-affected quantity: ", AffectedQuantity
+
+    if AffectedQuantity < 1 or AffectedQuantity > Q
+        print "ERROR: Invalid affected quantity!"
+    end
+next
+

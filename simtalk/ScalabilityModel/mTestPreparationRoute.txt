@@ -1,0 +1,11 @@
+-- .Models.Model.mTestPreparationRoute
+var Batch : object
+
+Batch := mCreatePreparationBatch(1)
+
+if Batch /= void
+    mStartPreparationBatch(Batch)
+else
+    print "ERROR: No preparation batch was created."
+end
+

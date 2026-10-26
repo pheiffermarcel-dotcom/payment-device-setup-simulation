@@ -1,0 +1,53 @@
+-- .Models.Model.mAssignWorkOrderOTA
+param WO : object
+
+var OTAProbability : real
+var WiFiProbability : real
+
+-- Prevent OTA from being assigned more than once.
+if WO.OTAMethod /= ""
+    return
+end
+
+-- Default: no order-specific OTA.
+WO.OTARequired := false
+WO.OTAAffectedQuantity := 0
+WO.OTAMethod := "None"
+WO.OTADuration := 0:00:00
+
+-- If the entire WO was fulfilled from pre-updated stock, no order-specific OTA can be required.
+if WO.UnupdatedQuantity <= 0
+    return
+end
+
+OTAProbability := OTAParameters[2, 5]
+WiFiProbability := OTAParameters[2, 2]
+
+-- Apply the OTA probability only to the unupdated portion of the WO.
+if z_uniform(1, 0, 1) < OTAProbability
+
+    WO.OTARequired := true
+
+    WO.OTAAffectedQuantity :=
+        mGetOTAAffectedQuantity(WO.UnupdatedQuantity)
+
+    if z_uniform(1, 0, 1) < WiFiProbability
+
+        WO.OTAMethod := "WiFi"
+
+        var WiFiMinutes : real
+        WiFiMinutes := z_triangle(1, 45, 30, 60)
+
+        WO.OTADuration := WiFiMinutes * 1:00
+
+    else
+
+        WO.OTAMethod := "USB"
+
+        WO.OTADuration :=
+            WO.OTAAffectedQuantity * 6:00
+
+    end
+
+end
+

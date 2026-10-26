@@ -1,0 +1,237 @@
+-- .Models.Model.mAssignDSO
+param WO : object -> boolean
+
+
+-- Historical assignment
+
+if AssignmentMode = "Historical"
+
+    WO.SimulationDSO := WO.DSO
+
+    if WO.SimulationDSO > NumberOfDSOs
+
+        print "ERROR: Historical DSO ",
+              WO.DSO,
+              " is not available with NumberOfDSOs = ",
+              NumberOfDSOs
+
+        return false
+
+    end
+
+    return true
+
+end
+
+-- Hybrid assignment
+
+if AssignmentMode = "Hybrid"
+
+    -- Preserve an existing Hybrid assignment.
+    if WO.SimulationDSO >= 1 and
+       WO.SimulationDSO <= NumberOfDSOs
+
+        return true
+
+    end
+
+
+    var MinimumWorkload : integer
+    var CurrentWorkload : integer
+    var SelectedDSO : integer
+    var WaitingWO : object
+
+    MinimumWorkload := 999999
+    SelectedDSO := 0
+
+
+    -- First pass:
+    -- Find the minimum unfinished customer-WO workload.
+
+    for var DSO := 1 to NumberOfDSOs
+
+        CurrentWorkload := 0
+
+
+        -- Count an active customer WO.
+        if DSO_State[3, DSO] /= void
+
+            CurrentWorkload :=
+                CurrentWorkload + 1
+
+        end
+
+
+        -- Count waiting WOs already assigned to this DSO.
+        for var i := 1 to WaitingOrders.numMU
+
+            WaitingWO := WaitingOrders.MU(i)
+
+            if WaitingWO /= WO and
+               WaitingWO.SimulationDSO = DSO
+
+                CurrentWorkload :=
+                    CurrentWorkload + 1
+
+            end
+
+        next
+
+
+        if CurrentWorkload < MinimumWorkload
+
+            MinimumWorkload :=
+                CurrentWorkload
+
+        end
+
+    next
+
+
+    -- SECOND PASS:
+    -- Search from the round-robin pointer to the final DSO.
+
+    for var DSO := NextHybridDSO to NumberOfDSOs
+
+        CurrentWorkload := 0
+
+
+        if DSO_State[3, DSO] /= void
+
+            CurrentWorkload :=
+                CurrentWorkload + 1
+
+        end
+
+
+        for var i := 1 to WaitingOrders.numMU
+
+            WaitingWO := WaitingOrders.MU(i)
+
+            if WaitingWO /= WO and
+               WaitingWO.SimulationDSO = DSO
+
+                CurrentWorkload :=
+                    CurrentWorkload + 1
+
+            end
+
+        next
+
+
+        if CurrentWorkload = MinimumWorkload
+
+            SelectedDSO := DSO
+            exitloop
+
+        end
+
+    next
+
+
+    -- Wrap-around:
+    -- If necessary, search from DSO 1 up to the DSO before the current round-robin pointer.
+
+    if SelectedDSO = 0
+
+        for var DSO := 1 to NextHybridDSO - 1
+
+            CurrentWorkload := 0
+
+
+            if DSO_State[3, DSO] /= void
+
+                CurrentWorkload :=
+                    CurrentWorkload + 1
+
+            end
+
+
+            for var i := 1 to WaitingOrders.numMU
+
+                WaitingWO := WaitingOrders.MU(i)
+
+                if WaitingWO /= WO and
+                   WaitingWO.SimulationDSO = DSO
+
+                    CurrentWorkload :=
+                        CurrentWorkload + 1
+
+                end
+
+            next
+
+
+            if CurrentWorkload = MinimumWorkload
+
+                SelectedDSO := DSO
+                exitloop
+
+            end
+
+        next
+
+    end
+
+
+    -- Validate assignment
+
+    if SelectedDSO = 0
+
+        print "ERROR: Hybrid DSO assignment failed."
+
+        WO.SimulationDSO := 0
+
+        return false
+
+    end
+
+
+    -- Permanently assign this WO to the selected DSO.
+    WO.SimulationDSO := SelectedDSO
+
+
+    -- Advance the round-robin pointer.
+    NextHybridDSO := SelectedDSO + 1
+
+    if NextHybridDSO > NumberOfDSOs
+
+        NextHybridDSO := 1
+
+    end
+
+
+    return true
+
+end
+
+
+-- FIFO assignment
+
+if AssignmentMode = "FIFO"
+
+    for var i := 1 to NumberOfDSOs
+
+        if DSO_State[2, i] = false
+
+            WO.SimulationDSO := i
+
+            return true
+
+        end
+
+    next
+
+
+    WO.SimulationDSO := 0
+
+    return false
+
+end
+
+
+-- Error catching: unknown assignment mode
+
+print "ERROR: Unknown AssignmentMode: ", AssignmentMode
+
+return false

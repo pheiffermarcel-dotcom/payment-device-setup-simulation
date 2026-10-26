@@ -1,0 +1,39 @@
+-- .Models.Model.mUpdateSOCompletion
+
+param WO : object
+
+var ResultRow : integer
+ResultRow := 0
+
+-- Find the SO associated with this WO.
+for var i := 1 to SO_Results.yDim
+
+    if SO_Results[1, i] = WO.SalesOrderNumber
+        ResultRow := i
+        exitloop
+    end
+
+next
+
+if ResultRow = 0
+
+    print "ERROR: Sales Order not found in SO_Results: ", WO.SalesOrderNumber
+    return
+
+end
+
+-- Record WO completion
+SO_Results[3, ResultRow] := SO_Results[3, ResultRow] + 1
+
+-- Calculate SOSLT once all WOs of SOs has completed setup
+if SO_Results[3, ResultRow] = SO_Results[2, ResultRow]
+
+    -- Completion timestamp of final WO.
+    SO_Results[5, ResultRow] := WO.CompletionTime
+
+    -- SOSLT starts at the first WO creation timestamp.
+    SO_Results[6, ResultRow] :=
+        SO_Results[5, ResultRow] - SO_Results[4, ResultRow]
+
+end
+

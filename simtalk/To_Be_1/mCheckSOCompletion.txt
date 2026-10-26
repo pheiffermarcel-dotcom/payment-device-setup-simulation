@@ -1,0 +1,19 @@
+-- .Models.Model.mCheckSOCompletion
+
+var MismatchCount : integer
+MismatchCount := 0
+
+for var i := 1 to SO_Results.yDim
+
+    if SO_Results[3, i] /= SO_Results[2, i]
+        MismatchCount := MismatchCount + 1
+        print "INCOMPLETE SO: ", SO_Results[1, i],
+              " | Total WOs: ", SO_Results[2, i],
+              " | Completed WOs: ", SO_Results[3, i]
+    end
+
+next
+
+print "Sales Orders checked: ", SO_Results.yDim
+print "Sales Orders with mismatched completion counts: ", MismatchCount
+

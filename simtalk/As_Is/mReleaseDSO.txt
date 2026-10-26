@@ -1,0 +1,45 @@
+-- .Models.Model.mReleaseDSO
+
+param WO : object
+
+var DSORow : integer
+var AssignedWOCount : integer
+
+DSORow := WO.SimulationDSO
+AssignedWOCount := 0
+
+-- The DSO is no longer processing this WO.
+DSO_State[2, DSORow] := false
+DSO_State[3, DSORow] := void
+
+-- Count all historical WOs assigned to this DSO for the current SO, including WOs that have not yet arrived in the simulation.
+-- Count completed WOs and WOs currently waiting for this DSO and SO.
+AssignedWOCount := DSO_State[5, DSORow]
+
+for var i := 1 to WaitingOrders.numMU
+
+    var WaitingWO : object
+    WaitingWO := WaitingOrders.MU(i)
+
+    if WaitingWO.SalesOrderNumber = WO.SalesOrderNumber and
+       WaitingWO.DSO = WO.DSO
+
+        AssignedWOCount := AssignedWOCount + 1
+
+    end
+
+next
+
+-- Release the SO reservation only after this DSO has completed every assigned WO.
+if DSO_State[5, DSORow] = AssignedWOCount
+
+    -- Record this DSO's commitment to the completed SO.
+    DSO_State[7, DSORow] := DSO_State[7, DSORow] +
+        (WO.CompletionTime - DSO_State[6, DSORow])
+
+    -- Clear the reservation for the next SO.
+    DSO_State[4, DSORow] := ""
+    DSO_State[5, DSORow] := 0
+
+end
+

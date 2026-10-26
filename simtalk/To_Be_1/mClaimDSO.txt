@@ -1,0 +1,16 @@
+-- .Models.Model.mClaimDSO
+
+param WO : object
+
+var DSORow : integer
+DSORow := WO.SimulationDSO
+
+-- An empty CurrentSO means this DSO is starting a new SO commitment.
+if DSO_State[4, DSORow] = ""
+    DSO_State[6, DSORow] := WO.ReleaseTime
+end
+
+DSO_State[2, DSORow] := true
+DSO_State[3, DSORow] := WO
+DSO_State[4, DSORow] := WO.SalesOrderNumber
+

@@ -1,0 +1,6 @@
+-- .Models.Model.mResetPreUpdatedInventory
+for var i := 1 to PreUpdatedInventory.yDim
+    PreUpdatedInventory[2, i] := 0
+    PreUpdatedInventory[3, i] := 0
+next
+

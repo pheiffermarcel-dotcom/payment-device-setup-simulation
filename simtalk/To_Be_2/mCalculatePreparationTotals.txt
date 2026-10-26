@@ -1,0 +1,18 @@
+-- .Models.Model.mCalculatePreparationTotals
+TotalPreUpdatedDevicesPrepared := 0
+TotalPreparationProcessingTime := 0:00:00
+TotalPreparationOTATime := 0:00:00
+
+for var i := 1 to Preparation_Results.yDim
+
+    TotalPreUpdatedDevicesPrepared :=
+        TotalPreUpdatedDevicesPrepared + Preparation_Results[3, i]
+
+    TotalPreparationProcessingTime :=
+        TotalPreparationProcessingTime + Preparation_Results[7, i]
+
+    TotalPreparationOTATime :=
+        TotalPreparationOTATime + Preparation_Results[11, i]
+
+next
+

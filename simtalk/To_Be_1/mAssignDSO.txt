@@ -1,0 +1,28 @@
+-- .Models.Model.mAssignDSO
+param WO : object -> boolean
+
+if AssignmentMode = "Historical"
+    WO.SimulationDSO := WO.DSO
+
+    if WO.SimulationDSO > NumberOfDSOs
+        print "ERROR: Historical DSO ", WO.DSO, " is not available with NumberOfDSOs = ", NumberOfDSOs
+        return false
+    end
+
+    return true
+end
+
+if AssignmentMode = "FIFO"
+    for var i := 1 to NumberOfDSOs
+        if DSO_State[2, i] = false
+            WO.SimulationDSO := i
+            return true
+        end
+    next
+
+    WO.SimulationDSO := 0
+    return false
+end
+
+return false
+

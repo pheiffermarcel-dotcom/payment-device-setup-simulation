@@ -1,0 +1,19 @@
+-- .Models.Model.mDSOHasWaitingWO
+param DSO : integer
+-> boolean
+
+var WO : object
+
+for var i := 1 to WaitingOrders.numMU
+
+    WO := WaitingOrders.MU(i)
+
+    -- In the historical-assignment To-Be experiment, each WO remains assigned to its historical DSO.
+    if WO.DSO = DSO
+        return true
+    end
+
+next
+
+return false
+

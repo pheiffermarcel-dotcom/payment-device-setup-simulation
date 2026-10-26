@@ -1,0 +1,48 @@
+-- .Models.Model.mCheckToBeCompletion
+-- Prevent the accounting endpoint from being recorded twice.
+if ToBeAccountingComplete
+    return
+end
+
+-- Historical workload must be fully completed.
+if CompletedWOCount < WO_History.yDim
+    return
+end
+
+-- If any DSO is still occupied, the To-Be accounting period is not yet complete.
+for var DSO := 1 to NumberOfDSOs
+
+    if DSO_State[2, DSO] = true
+        return
+    end
+
+next
+
+-- All historical WOs and all remaining preparation activity are now complete.
+
+-- Calculate final preparation and inventory totals.
+mCalculatePreparationTotals
+mCalculateEndingPreUpdatedStock
+
+-- Record the full To-Be accounting endpoint.
+FinalPreparationCompletionTime := EventController.AbsSimTime
+
+-- Calculate the full accounting period from the historical reporting start until all remaining preparation is complete.
+ToBeAccountingElapsedTime :=
+    FinalPreparationCompletionTime - HistoricalPeriodStart
+
+-- Calculate replication-level KPIs.
+mCalculateReplicationKPIs
+
+-- Validate inventory accounting before recording results.
+mValidateToBeAccounting
+
+-- Record the completed replication.
+mRecordToBeKPIs
+
+-- Prevent this endpoint from being recorded again.
+ToBeAccountingComplete := true
+
+print "TO-BE ACCOUNTING COMPLETE | Time: ",
+      FinalPreparationCompletionTime
+

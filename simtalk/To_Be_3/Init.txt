@@ -1,0 +1,57 @@
+-- .Models.Model.Init
+mResetPreUpdatedInventory
+mCalculatePreparationGroupProbabilities
+NextPreparationBatchID := 1
+Preparation_Results.deleteContents
+ToBe_KPIs.deleteContents
+TotalUnupdatedDevicesUsed := 0
+TotalToBeDSOWorkTime := 0:00:00
+ToBeAccountingElapsedTime := 0:00:00
+PreparedStockUtilisation := 0.0
+NextHybridDSO := 1
+
+TotalWorkOrderOTATime := 0:00:00
+TotalWorkOrdersRequiringOTA := 0
+
+NextWORow := 1
+ReleasedWOCount := 0
+CompletedWOCount := 0
+TotalPreUpdatedDevicesUsed := 0
+ToBeAccountingComplete := false
+
+MeanSOSLT := 0:00:00
+SalesOrderThroughput := 0.0
+DeviceThroughput := 0.0
+MeanDSOUtilisation := 0.0
+PreUpdatedDemandCoverage := 0.0
+MeanWorkOrderDSOUtilisation := 0.0
+
+FirstWOTime := WO_History[6, 1]
+
+WO_Results.deleteContents
+mInitialiseSOResults
+
+
+-- Find the earliest historical WO creation timestamp. This defines the beginning of the modelled setup period.
+HistoricalPeriodStart := WO_History[6, 1]
+
+for var i := 2 to WO_History.yDim
+
+    if WO_History[6, i] < HistoricalPeriodStart
+        HistoricalPeriodStart := WO_History[6, i]
+    end
+
+next
+
+
+for var i := 1 to NumberOfDSOs
+    DSO_State[1, i] := i
+    DSO_State[2, i] := false
+    DSO_State[3, i] := void
+    DSO_State[4, i] := ""
+	DSO_State[5, i] := 0
+	DSO_State[7, i] := 0:00:00
+next
+
+&mReleaseNextWO.executeIn(FirstWOTime)
+

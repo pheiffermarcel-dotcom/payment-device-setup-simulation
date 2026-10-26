@@ -1,0 +1,20 @@
+-- .Models.Model.mStartWO
+param WO : object
+
+WO.StartTime := EventController.AbsSimTime
+WO.WaitingTime := WO.StartTime - WO.ReleaseTime
+
+WO.CurrentStep := "S1"
+
+var ProcessingTime : time
+ProcessingTime := .Models.Model.mGetProcessingTime(WO, "S1")
+WO.SetupProcessingTime := WO.SetupProcessingTime + ProcessingTime
+
+print "Starting Work Order: ", WO.WorkOrderNumber
+print "Simulation DSO: ", WO.SimulationDSO
+print "Group: ", WO.Group
+print "Current Step: ", WO.CurrentStep
+print "S1 Processing Time: ", ProcessingTime
+
+&mCompleteStep.executeIn(ProcessingTime, WO)
+

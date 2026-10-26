@@ -1,0 +1,70 @@
+-- .Models.Model.mInitialiseSOResults
+
+SO_Results.deleteContents
+
+if DemandMultiplier <= 0
+    print "ERROR: DemandMultiplier must be greater than zero."
+    return
+end
+
+for var i := 1 to WO_History.yDim
+
+    var CurrentSO : string
+    var ResultRow : integer
+    var HistoricalWOTime : datetime
+    var ScaledWOTime : datetime
+
+    CurrentSO := WO_History[1, i]
+    ResultRow := 0
+
+    -- Apply the same demand-compression transformation used for historical WO arrivals.
+    HistoricalWOTime := WO_History[6, i]
+
+    ScaledWOTime :=
+        HistoricalPeriodStart +
+        ((HistoricalWOTime - HistoricalPeriodStart) /
+         DemandMultiplier)
+
+    -- Find the existing SO.
+    for var j := 1 to SO_Results.yDim
+
+        if SO_Results[1, j] = CurrentSO
+            ResultRow := j
+            exitloop
+        end
+
+    next
+
+    -- Create a new SO record if necessary.
+    if ResultRow = 0
+
+        ResultRow := SO_Results.yDim + 1
+
+        SO_Results[1, ResultRow] := CurrentSO
+        SO_Results[2, ResultRow] := 0
+        SO_Results[3, ResultRow] := 0
+
+        -- Earliest scaled WO creation timestamp.
+        SO_Results[4, ResultRow] := ScaledWOTime
+
+        SO_Results[7, ResultRow] := 0
+
+    end
+
+    -- Identify the earliest scaled WO creation timestamp belonging to this SO.
+    if ScaledWOTime < SO_Results[4, ResultRow]
+
+        SO_Results[4, ResultRow] := ScaledWOTime
+
+    end
+
+    -- Count the WOs belonging to this SO.
+    SO_Results[2, ResultRow] :=
+        SO_Results[2, ResultRow] + 1
+
+    -- Accumulate the total device quantity.
+    SO_Results[7, ResultRow] :=
+        SO_Results[7, ResultRow] + WO_History[7, i]
+
+next
+

@@ -1,0 +1,36 @@
+-- .Models.Model.mRecordWOResult
+param WO : object
+
+var ResultRow : integer
+
+ResultRow := WO_Results.yDim + 1
+
+WO_Results[1, ResultRow] := WO.HistoricalRow
+WO_Results[2, ResultRow] := WO.SalesOrderNumber
+WO_Results[3, ResultRow] := WO.WorkOrderNumber
+WO_Results[4, ResultRow] := WO.DeviceType
+WO_Results[5, ResultRow] := WO.Grade
+WO_Results[6, ResultRow] := WO.Group
+WO_Results[7, ResultRow] := WO.WorkOrderQuantity
+WO_Results[8, ResultRow] := WO.DSO
+WO_Results[9, ResultRow] := WO.SimulationDSO
+WO_Results[10, ResultRow] := WO.ReleaseTime
+WO_Results[11, ResultRow] := WO.StartTime
+WO_Results[12, ResultRow] := WO.CompletionTime
+WO_Results[13, ResultRow] := WO.WaitingTime
+WO_Results[14, ResultRow] := WO.FlowTime
+WO_Results[15, ResultRow] := WO.SetupProcessingTime
+WO_Results[16, ResultRow] := WO.PreUpdatedQuantity
+WO_Results[17, ResultRow] := WO.UnupdatedQuantity
+WO_Results[18, ResultRow] := WO.OTARequired
+
+if WO.OTARequired
+
+    TotalWorkOrdersRequiringOTA :=
+        TotalWorkOrdersRequiringOTA + 1
+
+    TotalWorkOrderOTATime :=
+        TotalWorkOrderOTATime + WO.OTADuration
+
+end
+

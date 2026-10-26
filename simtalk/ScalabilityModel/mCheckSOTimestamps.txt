@@ -1,0 +1,25 @@
+-- .Models.Model.mCheckSOTimestamps
+
+var IssueCount : integer
+IssueCount := 0
+
+for var i := 1 to SO_Results.yDim
+
+    -- Verify that the earliest scaled WO creation timestamp does not occur after SO completion.
+    if SO_Results[4, i] > SO_Results[5, i] or
+
+       -- Verify that SOSLT is calculated from earliest scaled WO creation to final completion.
+       SO_Results[6, i] /=
+           SO_Results[5, i] - SO_Results[4, i]
+
+        IssueCount := IssueCount + 1
+
+        print "TIMESTAMP ISSUE: ", SO_Results[1, i]
+
+    end
+
+next
+
+print "Sales Orders checked: ", SO_Results.yDim
+print "Sales Orders with timestamp or lead-time issues: ", IssueCount
+

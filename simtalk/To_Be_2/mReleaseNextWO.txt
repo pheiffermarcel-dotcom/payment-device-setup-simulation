@@ -1,0 +1,56 @@
+-- .Models.Model.mReleaseNextWO
+if NextWORow > WO_History.yDim
+    return
+end
+var WO : object
+
+WO := .UserObjects.WorkOrder.create(WaitingOrders)
+WO.ReleaseTime := EventController.AbsSimTime
+
+WO.SalesOrderNumber := WO_History[1, NextWORow]
+WO.WorkOrderNumber := WO_History[2, NextWORow]
+WO.DeviceType := WO_History[3, NextWORow]
+WO.Grade := WO_History[4, NextWORow]
+
+if WO.DeviceType = "EMV"
+    if WO.Grade = "G1"
+        WO.Group := "EMVG1"
+    else
+        WO.Group := "EMVG2"
+    end
+else
+    if WO.Grade = "G1"
+        WO.Group := "NonEMVG1"
+    else
+        WO.Group := "NonEMVG2"
+    end
+end
+
+WO.DSO := WO_History[5, NextWORow]
+WO.HistoricalAddedTime := WO_History[6, NextWORow]
+WO.WorkOrderQuantity := WO_History[7, NextWORow]
+
+WO.HistoricalRow := NextWORow
+-- Assign released WO to its simulation DSO.
+-- Historical mode retains the historical DSO.
+-- Hybrid mode assigns the WO once using the Hybrid workload-balancing rule.
+if mAssignDSO(WO) = false
+
+    print "ERROR: DSO assignment failed for WO: ",
+          WO.WorkOrderNumber
+
+    return
+
+end
+
+
+ReleasedWOCount := ReleasedWOCount + 1
+NextWORow := NextWORow + 1
+
+mDispatchWO
+
+if NextWORow <= WO_History.yDim
+
+    &mReleaseNextWO.executeIn(WO_History[6, NextWORow])
+end
+

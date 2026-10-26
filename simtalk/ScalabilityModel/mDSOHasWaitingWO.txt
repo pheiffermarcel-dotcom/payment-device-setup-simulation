@@ -1,0 +1,36 @@
+-- .Models.Model.mDSOHasWaitingWO
+param DSO : integer
+-> boolean
+
+var WO : object
+
+for var i := 1 to WaitingOrders.numMU
+
+    WO := WaitingOrders.MU(i)
+
+    -- Historical mode
+    if AssignmentMode = "Historical"
+
+        if WO.DSO = DSO
+            return true
+        end
+
+    end
+
+    -- Hybrid mode
+    if AssignmentMode = "Hybrid"
+
+        -- Ensure the waiting WO has received its permanent Hybrid simulation assignment.
+        if mAssignDSO(WO)
+
+            if WO.SimulationDSO = DSO
+                return true
+            end
+
+        end
+
+    end
+
+next
+
+return false

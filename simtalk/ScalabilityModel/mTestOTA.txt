@@ -1,0 +1,16 @@
+-- .Models.Model.mTestOTA
+
+var WO : object
+
+WO := .UserObjects.WorkOrder.create(WaitingOrders)
+WO.WorkOrderQuantity := 10
+
+mAssignOTA(WO)
+
+print "OTA required: ", WO.OTARequired
+print "Affected quantity: ", WO.OTAAffectedQuantity
+print "OTA method: ", WO.OTAMethod
+print "OTA duration: ", WO.OTADuration
+
+WO.delete
+

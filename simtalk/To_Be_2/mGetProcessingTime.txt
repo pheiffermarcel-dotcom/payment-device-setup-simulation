@@ -1,0 +1,129 @@
+-- .Models.Model.mGetProcessingTime
+
+param WO : object, Step : string -> time
+
+var ParamRow : integer
+var MatchingParamRows : integer
+var Distribution : string
+var ProcessingModel : string
+var Param1 : real
+var Param2 : real
+var SecondsPerDevice : real
+var FinalSeconds : real
+
+ParamRow := 0
+MatchingParamRows := 0
+
+-- Find the parameter row for this Group and Step, check that exactly one matching row exists
+for var i := 1 to ProcessingTimeParameters.yDim
+    if ProcessingTimeParameters[1, i] = WO.Group and
+       ProcessingTimeParameters[2, i] = Step
+
+        MatchingParamRows := MatchingParamRows + 1
+        ParamRow := i
+    end
+next
+
+if MatchingParamRows = 0
+    print "ERROR: No processing-time parameters found for Group ", WO.Group, " and Step ", Step
+    return 0:00:00
+end
+
+if MatchingParamRows > 1
+    print "ERROR: Duplicate processing-time parameter rows for Group ", WO.Group, " and Step ", Step
+    return 0:00:00
+end
+
+-- Read distribution and its parameters
+Distribution := ProcessingTimeParameters[3, ParamRow]
+Param1 := ProcessingTimeParameters[4, ParamRow]
+Param2 := ProcessingTimeParameters[5, ParamRow]
+ProcessingModel := ProcessingTimeParameters[6, ParamRow]
+
+-- Sample stochastic processing time
+if Distribution = "LogNormal"
+
+    var ArithmeticMean : real
+    var ArithmeticSD : real
+
+    -- Convert log-space parameters to arithmetic mean and standard deviation
+    ArithmeticMean := exp(Param1 + (Param2 * Param2) / 2)
+
+    ArithmeticSD := ArithmeticMean *
+        sqrt(exp(Param2 * Param2) - 1)
+
+    -- Sample processing duration in seconds
+    SecondsPerDevice := z_lognorm(1,ArithmeticMean * 0:00:01,ArithmeticSD * 0:00:01) / 0:00:01
+
+elseif Distribution = "Weibull"
+
+    -- Param1 = Weibull shape (Alpha), Param2 = Weibull scale (Beta), in seconds
+    SecondsPerDevice := z_weibull(1,Param1,Param2 * 0:00:01) / 0:00:01
+
+elseif Distribution = "Gamma"
+
+    -- Param1 = Gamma shape (Alpha), Param2 = Gamma scale (Beta), in seconds, z_gamma returns a real-valued duration in seconds
+    SecondsPerDevice := z_gamma(1,Param1,Param2 * 0:00:01)
+
+elseif Distribution = "Empirical"
+
+    var MatchingRows : integer
+    var SelectedMatch : integer
+    var CurrentMatch : integer
+
+    MatchingRows := 0
+
+    -- Count matching empirical observations
+    for var j := 1 to EmpiricalProcessingTimes.yDim
+        if EmpiricalProcessingTimes[1, j] = WO.Group and
+           EmpiricalProcessingTimes[2, j] = Step
+
+            MatchingRows := MatchingRows + 1
+        end
+    next
+
+    if MatchingRows = 0
+        print "ERROR: No empirical processing times found for Group ", WO.Group, " and Step ", Step
+        return 0:00:00
+    end
+
+    -- Select one empirical observation
+    SelectedMatch := floor(z_uniform(1, 0, MatchingRows)) + 1
+
+    CurrentMatch := 0
+
+    for var j := 1 to EmpiricalProcessingTimes.yDim
+        if EmpiricalProcessingTimes[1, j] = WO.Group and
+           EmpiricalProcessingTimes[2, j] = Step
+
+            CurrentMatch := CurrentMatch + 1
+
+            if CurrentMatch = SelectedMatch
+                SecondsPerDevice := EmpiricalProcessingTimes[3, j]
+                exitloop
+            end
+        end
+    next
+
+else
+    print "ERROR: Unknown processing-time distribution: ", Distribution
+    return 0:00:00
+end
+
+-- Calculate total WO processing duration. Model A: sampled total batch duration, Model B: sampled seconds per device multiplied by WO quantity
+if ProcessingModel = "A"
+
+    FinalSeconds := SecondsPerDevice
+
+elseif ProcessingModel = "B"
+
+    FinalSeconds := SecondsPerDevice * WO.WorkOrderQuantity
+
+else
+    print "ERROR: Unknown processing model: ", ProcessingModel
+    return 0:00:00
+end
+
+-- Convert total seconds to Plant Simulation time
+return FinalSeconds * 0:00:01
+

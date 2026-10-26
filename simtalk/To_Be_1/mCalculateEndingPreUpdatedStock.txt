@@ -1,0 +1,10 @@
+-- .Models.Model.mCalculateEndingPreUpdatedStock
+EndingPreUpdatedStock := 0
+
+for var i := 1 to PreUpdatedInventory.yDim
+
+    EndingPreUpdatedStock :=
+        EndingPreUpdatedStock + PreUpdatedInventory[2, i]
+
+next
+

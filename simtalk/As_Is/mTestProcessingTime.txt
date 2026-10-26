@@ -1,0 +1,50 @@
+-- .Models.Model.mTestProcessingTime
+
+var TestWO : object
+var TestGroup : string
+var TestStep : string
+var TestTime : time
+var PassedCount : integer
+var FailedCount : integer
+
+PassedCount := 0
+FailedCount := 0
+
+-- Create a temporary WO  outside the historical flow
+TestWO := .UserObjects.WorkOrder.create(ProcessingTimeTestBuffer)
+TestWO.WorkOrderQuantity := 20
+
+print "--------------------------------"
+print "24-INPUT PROCESSING TIME TEST"
+print "Test quantity: 20"
+print "--------------------------------"
+
+-- Test every group-step parameter row
+for var i := 1 to ProcessingTimeParameters.yDim
+
+    TestGroup := ProcessingTimeParameters[1, i]
+    TestStep := ProcessingTimeParameters[2, i]
+
+    TestWO.Group := TestGroup
+
+    TestTime := mGetProcessingTime(TestWO, TestStep)
+
+    if TestTime > 0:00:00
+        PassedCount := PassedCount + 1
+        print "PASS | ", TestGroup, " | ", TestStep, " | ", TestTime
+    else
+        FailedCount := FailedCount + 1
+        print "FAIL | ", TestGroup, " | ", TestStep, " | ", TestTime
+    end
+
+next
+
+-- Remove temporary WO
+TestWO.delete
+
+print "--------------------------------"
+print "Total inputs tested: ", PassedCount + FailedCount
+print "Passed: ", PassedCount
+print "Failed: ", FailedCount
+print "--------------------------------"
+

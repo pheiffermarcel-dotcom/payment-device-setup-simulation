@@ -1,0 +1,8 @@
+parameter,value,unit_or_comment
+observed_WiFi_incidence,0.454545,probability
+estimated_WiFi_given_OTA,0.8,probability; operational estimate
+derived_OTA_requirement_probability,0.56818125,probability
+WiFi_minimum_duration,30,minutes
+WiFi_most_likely_duration,45,minutes
+WiFi_maximum_duration,60,minutes
+USB_duration_per_affected_device,6,minutes per device

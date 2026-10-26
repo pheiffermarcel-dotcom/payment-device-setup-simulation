@@ -1,0 +1,52 @@
+-- .Models.Model.mSelectPreparationGroup
+-> string
+
+var TotalEligibleProbability : real
+var Draw : real
+var CumulativeProbability : real
+var AvailableCapacity : integer
+
+TotalEligibleProbability := 0.0
+
+-- First pass: Calculate the total historical probability belonging only to groups that still have preparation capacity.
+for var i := 1 to PreUpdatedInventory.yDim
+
+    AvailableCapacity := MaxPreUpdatedStockPerGroup - PreUpdatedInventory[2, i] - PreUpdatedInventory[3, i]
+
+    if AvailableCapacity > 0
+        TotalEligibleProbability := TotalEligibleProbability + PreparationGroupProbabilities[3, i]
+    end
+
+next
+
+-- No historically demanded group has available capacity.
+if TotalEligibleProbability <= 0.0
+    return ""
+end
+
+-- Draw from the renormalised eligible probabilities.
+Draw := z_uniform(1, 0, TotalEligibleProbability)
+CumulativeProbability := 0.0
+
+for var i := 1 to PreUpdatedInventory.yDim
+
+    AvailableCapacity := MaxPreUpdatedStockPerGroup - PreUpdatedInventory[2, i] - PreUpdatedInventory[3, i]
+
+    if AvailableCapacity > 0 and
+       PreparationGroupProbabilities[3, i] > 0.0
+
+        CumulativeProbability := CumulativeProbability + PreparationGroupProbabilities[3, i]
+
+        if Draw < CumulativeProbability
+
+            return PreUpdatedInventory[1, i]
+
+        end
+
+    end
+
+next
+
+-- Numerical rounding safeguard.
+return ""
+

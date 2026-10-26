@@ -1,0 +1,106 @@
+-- .Models.Model.mDispatchWO
+
+var WO : object
+var AssignmentSuccessful : boolean
+var DispatchedOne : boolean
+var CurrentSO : string
+
+-- Hybrid dispatch
+
+if AssignmentMode = "Hybrid"
+
+    mDispatchHybridWO
+
+    return
+
+end
+
+
+if AssignmentMode = "Historical"
+
+    repeat
+        DispatchedOne := false
+
+        -- First pass:
+        -- Prioritise a waiting WO from the SO to which its previously assigned DSO is committed.
+        for var i := 1 to WaitingOrders.numMU
+
+            WO := WaitingOrders.MU(i)
+
+            AssignmentSuccessful := mAssignDSO(WO)
+
+            if AssignmentSuccessful
+                CurrentSO := DSO_State[4, WO.SimulationDSO]
+
+                if CurrentSO /= "" and
+                   WO.SalesOrderNumber = CurrentSO
+
+                    if mDSOAvailable(WO)
+
+                        mClaimDSO(WO)
+                        WO.move(ActiveOrders)
+                        mStartWO(WO)
+
+                        DispatchedOne := true
+                        exitloop
+
+                    end
+                end
+            end
+
+        next
+
+        -- Second pass:
+        -- If no committed WO can start, dispatch the first eligible waiting WO as before.
+        if DispatchedOne = false
+
+            for var i := 1 to WaitingOrders.numMU
+
+                WO := WaitingOrders.MU(i)
+
+                AssignmentSuccessful := mAssignDSO(WO)
+
+                if AssignmentSuccessful
+
+    				CurrentSO := DSO_State[4, WO.SimulationDSO]
+
+   					 -- An available DSO may start a new SO only when they have no outstanding SO reservation.
+   					 if CurrentSO = "" and mDSOAvailable(WO)
+
+     					   mClaimDSO(WO)
+     					   WO.move(ActiveOrders)
+        				   mStartWO(WO)
+
+  					       DispatchedOne := true
+        exitloop
+
+    end
+
+end
+
+            next
+
+        end
+
+until DispatchedOne = false
+
+
+-- Advance preparation for idle DSOs
+-- Normal historical WOs have already been given priority by the dispatch loop above.
+-- Any DSO that is still idle may now begin advance preparation, provided all preparation eligibility conditions are satisfied.
+
+for var DSO := 1 to NumberOfDSOs
+
+    if mCanDSOStartPreparation(DSO)
+
+        mStartIdlePreparation(DSO)
+
+    end
+
+next
+
+
+return
+end
+
+print "FIFO dispatch not implemented yet."

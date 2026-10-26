@@ -1,0 +1,210 @@
+-- .Models.Model.mCompletePreparationStep
+param Batch : object
+
+var ProcessingTime : time
+
+
+-- Outward route: S1 -> S2 -> S3 -> S4
+
+
+-- S1 completed -> start S2
+if Batch.PreparationStep = "S1"
+
+    Batch.PreparationStep := "S2"
+
+    ProcessingTime := mGetProcessingTime(Batch, "S2")
+
+    Batch.PreparationProcessingTime :=
+        Batch.PreparationProcessingTime + ProcessingTime
+
+    &mCompletePreparationStep.executeIn(ProcessingTime, Batch)
+
+    return
+end
+
+
+-- S2 completed -> start S3
+if Batch.PreparationStep = "S2"
+
+    Batch.PreparationStep := "S3"
+
+    ProcessingTime := mGetProcessingTime(Batch, "S3")
+
+    Batch.PreparationProcessingTime :=
+        Batch.PreparationProcessingTime + ProcessingTime
+
+    &mCompletePreparationStep.executeIn(ProcessingTime, Batch)
+
+    return
+end
+
+
+-- S3 completed -> start S4
+if Batch.PreparationStep = "S3"
+
+    Batch.PreparationStep := "S4"
+
+    ProcessingTime := mGetProcessingTime(Batch, "S4")
+
+    Batch.PreparationProcessingTime :=
+        Batch.PreparationProcessingTime + ProcessingTime
+
+    &mCompletePreparationStep.executeIn(ProcessingTime, Batch)
+
+    return
+end
+
+
+-- S4 completion and OTA decision
+
+if Batch.PreparationStep = "S4"
+
+    -- Apply existing OTA logic.
+    mAssignOTA(Batch)
+
+    if Batch.OTARequired
+
+        -- Spend the sampled OTA duration.
+        Batch.PreparationStep := "OTA"
+
+        Batch.PreparationOTATime :=
+            Batch.PreparationOTATime + Batch.OTADuration
+
+        &mCompletePreparationStep.executeIn(Batch.OTADuration, Batch)
+
+        return
+
+    else
+
+        -- No OTA delay. Start return S3 activity.
+        Batch.PreparationStep := "ReturnS3Processing"
+
+        ProcessingTime := mGetProcessingTime(Batch, "S3")
+
+        Batch.PreparationProcessingTime :=
+            Batch.PreparationProcessingTime + ProcessingTime
+
+        &mCompletePreparationStep.executeIn(ProcessingTime, Batch)
+
+        return
+
+    end
+
+end
+
+
+-- OTA completed -> start return S3
+
+if Batch.PreparationStep = "OTA"
+
+    Batch.PreparationStep := "ReturnS3Processing"
+
+    ProcessingTime := mGetProcessingTime(Batch, "S3")
+
+    Batch.PreparationProcessingTime :=
+        Batch.PreparationProcessingTime + ProcessingTime
+
+    &mCompletePreparationStep.executeIn(ProcessingTime, Batch)
+
+    return
+end
+
+
+-- Return S3 completed -> start return S2
+
+if Batch.PreparationStep = "ReturnS3Processing"
+
+    Batch.PreparationStep := "ReturnS2Processing"
+
+    ProcessingTime := mGetProcessingTime(Batch, "S2")
+
+    Batch.PreparationProcessingTime :=
+        Batch.PreparationProcessingTime + ProcessingTime
+
+    &mCompletePreparationStep.executeIn(ProcessingTime, Batch)
+
+    return
+end
+
+
+-- Return S2 completed -> start return S1
+
+if Batch.PreparationStep = "ReturnS2Processing"
+
+    Batch.PreparationStep := "ReturnS1Processing"
+
+    ProcessingTime := mGetProcessingTime(Batch, "S1")
+
+    Batch.PreparationProcessingTime :=
+        Batch.PreparationProcessingTime + ProcessingTime
+
+    &mCompletePreparationStep.executeIn(ProcessingTime, Batch)
+
+    return
+end
+
+
+-- Return S1 completed -> complete preparation batch
+
+if Batch.PreparationStep = "ReturnS1Processing"
+
+    var InventoryRow : integer
+
+    InventoryRow := 0
+
+    for var i := 1 to PreUpdatedInventory.yDim
+
+        if PreUpdatedInventory[1, i] = Batch.Group
+            InventoryRow := i
+            exitloop
+        end
+
+    next
+
+
+    if InventoryRow = 0
+        print "ERROR: Preparation group not found in PreUpdatedInventory: ", Batch.Group
+        return
+    end
+
+
+    -- Release the capacity reservation.
+    PreUpdatedInventory[3, InventoryRow] :=
+        PreUpdatedInventory[3, InventoryRow] - Batch.BatchQuantity
+
+
+    -- Add completed devices to available pre-updated stock.
+    PreUpdatedInventory[2, InventoryRow] :=
+        PreUpdatedInventory[2, InventoryRow] + Batch.BatchQuantity
+
+
+    Batch.PreparationCompletionTime := EventController.SimTime
+    Batch.PreparationStep := "Completed"
+
+	-- Record the completed preparation batch.
+	mRecordPreparationResult(Batch)
+
+    Batch.move(.Models.Model.PreUpdatedStock)
+
+
+    -- Release the DSO after preparation is complete.
+    DSO_State[2, Batch.PreparationDSO] := false
+
+
+    -- Lean completion output.
+    print "PREP COMPLETE | DSO: ", Batch.PreparationDSO,
+          " | Group: ", Batch.Group,
+          " | Qty: ", Batch.BatchQuantity,
+          " | Stock: ", PreUpdatedInventory[2, InventoryRow],
+          " | Reserved: ", PreUpdatedInventory[3, InventoryRow]
+
+
+    -- Re-run dispatch immediately.
+    -- Any waiting historical WO for this DSO receives priority before another preparation batch can be started.
+    mDispatchWO
+
+	-- Check whether all historical WOs and all remaining preparation activity are now complete.
+	mCheckToBeCompletion
+
+    return
+end

@@ -1,0 +1,19 @@
+-- .Models.Model.mRecordPreparationResult
+param Batch : object
+
+var ResultRow : integer
+
+ResultRow := Preparation_Results.yDim + 1
+
+Preparation_Results[1, ResultRow] := Batch.BatchID
+Preparation_Results[2, ResultRow] := Batch.Group
+Preparation_Results[3, ResultRow] := Batch.BatchQuantity
+Preparation_Results[4, ResultRow] := Batch.PreparationDSO
+Preparation_Results[5, ResultRow] := Batch.PreparationStartTime
+Preparation_Results[6, ResultRow] := Batch.PreparationCompletionTime
+Preparation_Results[7, ResultRow] := Batch.PreparationProcessingTime
+Preparation_Results[8, ResultRow] := Batch.OTARequired
+Preparation_Results[9, ResultRow] := Batch.OTAMethod
+Preparation_Results[10, ResultRow] := Batch.OTAAffectedQuantity
+Preparation_Results[11, ResultRow] := Batch.PreparationOTATime
+

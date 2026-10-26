@@ -1,0 +1,44 @@
+-- .Models.Model.mClaimDSO
+param WO : object
+
+var DSORow : integer
+
+DSORow := WO.SimulationDSO
+
+-- Hybrid mode
+
+if AssignmentMode = "Hybrid"
+
+    -- Hybrid allocation performed at WO level. No SO reservation is created.
+    DSO_State[2, DSORow] := true
+    DSO_State[3, DSORow] := WO
+    DSO_State[4, DSORow] := ""
+
+    return
+
+end
+
+-- Historical mode
+-- Preserve frozen To-Be 1 SO-commitment behaviour.
+
+if AssignmentMode = "Historical"
+
+    -- An empty CurrentSO means this DSO is starting a new SO commitment.
+    if DSO_State[4, DSORow] = ""
+
+        DSO_State[6, DSORow] := WO.ReleaseTime
+
+    end
+
+    DSO_State[2, DSORow] := true
+    DSO_State[3, DSORow] := WO
+    DSO_State[4, DSORow] := WO.SalesOrderNumber
+
+    return
+
+end
+
+
+print "ERROR: Unknown AssignmentMode in mClaimDSO: ",
+      AssignmentMode
+

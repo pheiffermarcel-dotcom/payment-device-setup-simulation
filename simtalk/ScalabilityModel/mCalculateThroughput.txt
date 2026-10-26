@@ -1,0 +1,24 @@
+-- .Models.Model.mCalculateThroughput
+
+-- Convert the reporting period to days
+var ElapsedDays : real
+ElapsedDays := HistoricalElapsedTime / 1:00:00:00
+
+if ElapsedDays <= 0
+    print "ERROR: HistoricalElapsedTime must be positive."
+    return
+end
+
+-- SOs completed per elapsed day
+SalesOrderThroughput := SO_Results.yDim / ElapsedDays
+
+-- Devices completed per elapsed day
+var TotalDevices : integer
+TotalDevices := 0
+
+for var i := 1 to SO_Results.yDim
+    TotalDevices := TotalDevices + SO_Results[7, i]
+next
+
+DeviceThroughput := TotalDevices / ElapsedDays
+

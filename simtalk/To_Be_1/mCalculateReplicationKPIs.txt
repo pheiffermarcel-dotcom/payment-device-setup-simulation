@@ -1,0 +1,118 @@
+-- .Models.Model.mCalculateReplicationKPIs
+-- Find the latest simulated SO completion timestamp
+HistoricalPeriodEnd := SO_Results[5, 1]
+
+for var i := 2 to SO_Results.yDim
+    if SO_Results[5, i] > HistoricalPeriodEnd
+        HistoricalPeriodEnd := SO_Results[5, i]
+    end
+next
+
+-- Calculate the full elapsed reporting period
+HistoricalElapsedTime := HistoricalPeriodEnd - HistoricalPeriodStart
+
+var TotalSOSLT : time
+var CompletedSOCount : integer
+
+TotalSOSLT := 0:00:00
+CompletedSOCount := 0
+
+for var i := 1 to SO_Results.yDim
+
+    if SO_Results[3, i] = SO_Results[2, i]
+
+        TotalSOSLT := TotalSOSLT + SO_Results[6, i]
+        CompletedSOCount := CompletedSOCount + 1
+
+    end
+
+next
+
+if CompletedSOCount > 0
+    MeanSOSLT := TotalSOSLT / CompletedSOCount
+else
+    MeanSOSLT := 0:00:00
+end
+
+mCalculateThroughput
+mCalculateDSOResults
+
+var TotalUtilisation : real
+TotalUtilisation := 0.0
+
+for var i := 1 to NumberOfDSOs
+    TotalUtilisation := TotalUtilisation + DSO_Results[10, i]
+next
+
+if NumberOfDSOs > 0
+    MeanDSOUtilisation := TotalUtilisation / NumberOfDSOs
+else
+    MeanDSOUtilisation := 0.0
+end
+
+-- Calculate mean historical WO utilisation. This uses the same utilisation definition as the As-Is model: historical WO busy time / HistoricalElapsedTime.
+var TotalWorkOrderUtilisation : real
+TotalWorkOrderUtilisation := 0.0
+
+for var i := 1 to NumberOfDSOs
+    TotalWorkOrderUtilisation :=
+        TotalWorkOrderUtilisation + DSO_Results[6, i]
+next
+
+if NumberOfDSOs > 0
+    MeanWorkOrderDSOUtilisation :=
+        TotalWorkOrderUtilisation / NumberOfDSOs
+else
+    MeanWorkOrderDSOUtilisation := 0.0
+end
+
+-- Sum the recorded S1–S7 setup durations for this replication.
+-- Column 15 excludes OTA and waiting time.
+TotalSetupProcessingTime := 0:00:00
+
+for var i := 1 to WO_Results.yDim
+
+    TotalSetupProcessingTime :=
+        TotalSetupProcessingTime +
+        WO_Results[15, i]
+
+next
+
+-- Calculate total DSO work performed in the To-Be system.
+TotalToBeDSOWorkTime :=
+    TotalSetupProcessingTime +
+    TotalWorkOrderOTATime +
+    TotalPreparationProcessingTime +
+    TotalPreparationOTATime
+
+print "Total S1–S7 setup processing time: ",
+      TotalSetupProcessingTime
+
+-- Calculate the proportion of prepared stock that was actually consumed by historical demand.
+if TotalPreUpdatedDevicesPrepared > 0
+
+    PreparedStockUtilisation :=
+        TotalPreUpdatedDevicesUsed /
+        TotalPreUpdatedDevicesPrepared
+
+else
+
+    PreparedStockUtilisation := 0.0
+
+end
+
+-- Calculate the proportion of historical device demand fulfilled from pre-updated inventory.
+if TotalPreUpdatedDevicesUsed +
+   TotalUnupdatedDevicesUsed > 0
+
+    PreUpdatedDemandCoverage :=
+        TotalPreUpdatedDevicesUsed /
+        (TotalPreUpdatedDevicesUsed +
+         TotalUnupdatedDevicesUsed)
+
+else
+
+    PreUpdatedDemandCoverage := 0.0
+
+end
+

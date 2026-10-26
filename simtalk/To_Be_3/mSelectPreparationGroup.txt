@@ -1,0 +1,75 @@
+-- .Models.Model.mSelectPreparationGroup
+-> string
+
+var AvailableCapacity : integer
+var DemandProbability : real
+var CurrentStock : integer
+var StockCoverage : real
+
+var BestGroup : string
+var BestCoverage : real
+var BestProbability : real
+var FoundEligibleGroup : boolean
+
+
+FoundEligibleGroup := false
+BestGroup := ""
+BestCoverage := 0.0
+BestProbability := 0.0
+
+
+-- Dynamic demand-normalised preparation selection
+
+-- To-Be 3: Select the eligible group with the lowest current prepared-stock coverage relative to historical demand.
+-- StockCoverage = (AvailableStock + ReservedStock) / HistoricalDemandProbability
+-- Lower coverage means that the group is relatively more understocked compared with its historical demand.
+-- Future WOs are NOT inspected.
+-- Tie-break: If two groups have equal coverage, select the group with the higher historical demand probability.
+
+for var i := 1 to PreUpdatedInventory.yDim
+
+    AvailableCapacity :=
+        MaxPreUpdatedStockPerGroup - PreUpdatedInventory[2, i] - PreUpdatedInventory[3, i]
+
+    DemandProbability := PreparationGroupProbabilities[3, i]
+
+    -- Only historically demanded groups with remaining preparation capacity are eligible.
+    if AvailableCapacity > 0 and DemandProbability > 0.0
+
+        CurrentStock :=
+            PreUpdatedInventory[2, i] + PreUpdatedInventory[3, i]
+
+        StockCoverage := CurrentStock / DemandProbability
+
+        if FoundEligibleGroup = false
+
+            BestGroup := PreUpdatedInventory[1, i]
+            BestCoverage := StockCoverage
+            BestProbability := DemandProbability
+            FoundEligibleGroup := true
+
+        elseif StockCoverage < BestCoverage
+
+            BestGroup := PreUpdatedInventory[1, i]
+            BestCoverage := StockCoverage
+            BestProbability := DemandProbability
+
+        elseif StockCoverage = BestCoverage and
+               DemandProbability > BestProbability
+
+            BestGroup := PreUpdatedInventory[1, i]
+            BestCoverage := StockCoverage
+            BestProbability := DemandProbability
+
+        end
+
+    end
+
+next
+
+
+if FoundEligibleGroup = false
+    return ""
+end
+
+return BestGroup

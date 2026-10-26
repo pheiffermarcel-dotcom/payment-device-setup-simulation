@@ -1,0 +1,66 @@
+-- .Models.Model.mCreatePreparationBatch
+param DSO : integer
+-> object
+
+var Group : string
+var BatchQty : integer
+var InventoryRow : integer
+var Batch : object
+
+-- Select which group should be prepared.
+Group := mSelectPreparationGroup
+
+if Group = ""
+    return void
+end
+
+-- Determine batch quantity from remaining capacity.
+BatchQty := mGetPreparationBatchQuantity(Group)
+
+if BatchQty <= 0
+    return void
+end
+
+-- Find matching inventory row.
+InventoryRow := 0
+
+for var i := 1 to PreUpdatedInventory.yDim
+    if PreUpdatedInventory[1, i] = Group
+        InventoryRow := i
+        exitloop
+    end
+next
+
+if InventoryRow = 0
+    print "ERROR: Preparation group not found in PreUpdatedInventory: ", Group
+    return void
+end
+
+-- Reserve capacity
+PreUpdatedInventory[3, InventoryRow] :=
+    PreUpdatedInventory[3, InventoryRow] + BatchQty
+
+-- Create preparation batch.
+Batch := .UserObjects.PreparationBatch.create(PreparationOrders)
+
+-- Initialise preparation batch attributes.
+Batch.BatchID := NextPreparationBatchID
+NextPreparationBatchID := NextPreparationBatchID + 1
+
+Batch.BatchQuantity := BatchQty
+Batch.WorkOrderQuantity := BatchQty
+Batch.Group := Group
+Batch.PreparationDSO := DSO
+Batch.PreparationStep := ""
+Batch.PreparationStartTime := EventController.SimTime
+Batch.PreparationProcessingTime := 0:00:00
+Batch.PreparationOTATime := 0:00:00
+Batch.PreparationCompletionTime := 0:00:00
+
+Batch.OTARequired := false
+Batch.OTAAffectedQuantity := 0
+Batch.OTAMethod := ""
+Batch.OTADuration := 0:00:00
+
+return Batch
+

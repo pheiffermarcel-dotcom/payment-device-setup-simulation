@@ -1,0 +1,44 @@
+-- .Models.Model.mCanDSOStartPreparation
+param DSO : integer
+-> boolean
+
+var AvailableCapacity : integer
+var HasEligibleCapacity : boolean
+
+-- No new preparation may start after the final historical Work Order has been released.
+if NextWORow > WO_History.yDim
+    return false
+end
+
+-- The DSO must be idle.
+if DSO_State[2, DSO]
+    return false
+end
+
+-- A waiting historically assigned WO always takes priority over preparation.
+if mDSOHasWaitingWO(DSO)
+    return false
+end
+
+HasEligibleCapacity := false
+
+for var i := 1 to PreUpdatedInventory.yDim
+
+    AvailableCapacity :=
+        MaxPreUpdatedStockPerGroup - PreUpdatedInventory[2, i] - PreUpdatedInventory[3, i]
+
+    if AvailableCapacity > 0 and
+       PreparationGroupProbabilities[3, i] > 0.0
+
+        HasEligibleCapacity := true
+        exitloop
+    end
+
+next
+
+if HasEligibleCapacity = false
+    return false
+end
+
+return true
+

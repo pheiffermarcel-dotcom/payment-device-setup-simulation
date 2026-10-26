@@ -1,0 +1,170 @@
+-- .Models.Model.mExportScalabilityResults
+
+var ExpRow : integer
+var Rep : integer
+var OutRow : integer
+var ScenarioName : string
+var Demand : real
+var DSOCount : integer
+
+Scalability_RawResults.deleteContents
+
+OutRow := 1
+
+-- Twelve Experiment Manager scenarios. Scenario order must match the Experiment Manager table.
+for ExpRow := 1 to 12
+
+    -- Map Experiment Manager row to its scenario inputs.
+    if ExpRow = 1
+        ScenarioName := "D15_DSO5"
+        Demand := 15.0
+        DSOCount := 5
+
+    elseif ExpRow = 2
+        ScenarioName := "D15_DSO6"
+        Demand := 15.0
+        DSOCount := 6
+
+    elseif ExpRow = 3
+        ScenarioName := "D20_DSO6"
+        Demand := 20.0
+        DSOCount := 6
+
+    elseif ExpRow = 4
+        ScenarioName := "D20_DSO7"
+        Demand := 20.0
+        DSOCount := 7
+
+    elseif ExpRow = 5
+        ScenarioName := "D25_DSO7"
+        Demand := 25.0
+        DSOCount := 7
+
+    elseif ExpRow = 6
+        ScenarioName := "D25_DSO8"
+        Demand := 25.0
+        DSOCount := 8
+
+    elseif ExpRow = 7
+        ScenarioName := "D30_DSO5"
+        Demand := 30.0
+        DSOCount := 5
+
+    elseif ExpRow = 8
+        ScenarioName := "D30_DSO6"
+        Demand := 30.0
+        DSOCount := 6
+
+    elseif ExpRow = 9
+        ScenarioName := "D30_DSO7"
+        Demand := 30.0
+        DSOCount := 7
+
+    elseif ExpRow = 10
+        ScenarioName := "D30_DSO8"
+        Demand := 30.0
+        DSOCount := 8
+
+    elseif ExpRow = 11
+        ScenarioName := "D30_DSO9"
+        Demand := 30.0
+        DSOCount := 9
+
+    else
+        ScenarioName := "D30_DSO10"
+        Demand := 30.0
+        DSOCount := 10
+    end
+
+    -- Extract the 10 individual replications.
+    for Rep := 1 to 10
+
+        -- Scenario metadata.
+        Scalability_RawResults[1, OutRow] := ScenarioName
+        Scalability_RawResults[2, OutRow] := Demand
+        Scalability_RawResults[3, OutRow] := DSOCount
+        Scalability_RawResults[4, OutRow] := Rep
+
+-- MeanSOSLT (WO-based SOSLT).
+Scalability_RawResults[5, OutRow] :=
+    ExperimentManager.DetailedResults[7, ExpRow][1, Rep]
+
+        -- SalesOrderThroughput.
+        Scalability_RawResults[6, OutRow] :=
+            ExperimentManager.DetailedResults[14, ExpRow][1, Rep]
+
+        -- DeviceThroughput.
+        Scalability_RawResults[7, OutRow] :=
+            ExperimentManager.DetailedResults[21, ExpRow][1, Rep]
+
+        -- MeanDSOUtilisation.
+        Scalability_RawResults[8, OutRow] :=
+            ExperimentManager.DetailedResults[28, ExpRow][1, Rep]
+
+        -- TotalSetupProcessingTime.
+        Scalability_RawResults[9, OutRow] :=
+            ExperimentManager.DetailedResults[35, ExpRow][1, Rep]
+
+        -- TotalPreUpdatedDevicesPrepared.
+        Scalability_RawResults[10, OutRow] :=
+            ExperimentManager.DetailedResults[42, ExpRow][1, Rep]
+
+        -- TotalPreUpdatedDevicesUsed.
+        Scalability_RawResults[11, OutRow] :=
+            ExperimentManager.DetailedResults[49, ExpRow][1, Rep]
+
+        -- EndingPreUpdatedStock.
+        Scalability_RawResults[12, OutRow] :=
+            ExperimentManager.DetailedResults[56, ExpRow][1, Rep]
+
+        -- TotalPreparationProcessingTime.
+        Scalability_RawResults[13, OutRow] :=
+            ExperimentManager.DetailedResults[63, ExpRow][1, Rep]
+
+        -- TotalPreparationOTATime.
+        Scalability_RawResults[14, OutRow] :=
+            ExperimentManager.DetailedResults[70, ExpRow][1, Rep]
+
+        -- TotalUnupdatedDevicesUsed.
+        Scalability_RawResults[15, OutRow] :=
+            ExperimentManager.DetailedResults[77, ExpRow][1, Rep]
+
+        -- TotalWorkOrdersRequiringOTA.
+        Scalability_RawResults[16, OutRow] :=
+            ExperimentManager.DetailedResults[84, ExpRow][1, Rep]
+
+        -- TotalWorkOrderOTATime.
+        Scalability_RawResults[17, OutRow] :=
+            ExperimentManager.DetailedResults[91, ExpRow][1, Rep]
+
+        -- PreparedStockUtilisation.
+        Scalability_RawResults[18, OutRow] :=
+            ExperimentManager.DetailedResults[98, ExpRow][1, Rep]
+
+        -- PreUpdatedDemandCoverage.
+        Scalability_RawResults[19, OutRow] :=
+            ExperimentManager.DetailedResults[105, ExpRow][1, Rep]
+
+        -- TotalToBeDSOWorkTime.
+        Scalability_RawResults[20, OutRow] :=
+            ExperimentManager.DetailedResults[112, ExpRow][1, Rep]
+
+        -- ToBeAccountingElapsedTime.
+        Scalability_RawResults[21, OutRow] :=
+            ExperimentManager.DetailedResults[119, ExpRow][1, Rep]
+
+        -- MeanWorkOrderDSOUtilisation.
+        Scalability_RawResults[22, OutRow] :=
+            ExperimentManager.DetailedResults[126, ExpRow][1, Rep]
+
+        OutRow := OutRow + 1
+
+    next
+
+next
+
+print "Scalability raw-results extraction complete."
+print "Scenarios exported: 12"
+print "Replications per scenario: 10"
+print "Rows exported: ", OutRow - 1
+
